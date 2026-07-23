@@ -1,0 +1,56 @@
+name: examgest_candidat
+description: "Application mobile candidat pour ExamGest MG - Gestion des examens nationaux."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Réseau
+  http: ^1.2.2
+
+  # State management
+  provider: ^6.1.2
+
+  # Stockage sécurisé du token JWT
+  flutter_secure_storage: ^9.2.2
+
+  # Dates / formats
+  intl: ^0.19.0
+
+  # Sélection de fichiers (pièces justificatives)
+  image_picker: ^1.1.2
+  file_picker: ^8.1.4
+
+  # QR Code (convocation)
+  qr_flutter: ^4.1.0
+
+  # Ouverture de liens externes (paiement Stripe Checkout)
+  url_launcher: ^6.3.1
+
+  # Téléchargement / ouverture de documents PDF
+  path_provider: ^2.1.4
+  open_filex: ^4.5.0
+  share_plus: ^10.1.2
+
+  # Typographie soignée
+  google_fonts: ^6.2.1
+
+  # Connexion Google
+  google_sign_in: ^6.2.1
+
+  # Animations douces
+  animate_do: ^3.3.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
