@@ -16,7 +16,7 @@ class PaiementScreen extends StatefulWidget {
   State<PaiementScreen> createState() => _PaiementScreenState();
 }
 
-class _PaiementScreenState extends State<PaiementScreen> {
+class _PaiementScreenState extends State<PaiementScreen> with WidgetsBindingObserver {
   bool _isLoadingHistory = true;
   bool _isSubmitting = false;
   bool _isDownloading = false;
@@ -31,30 +31,86 @@ class _PaiementScreenState extends State<PaiementScreen> {
   Timer? _pollingTimer;
   bool _isPolling = false;
   int _pollingAttempts = 0;
-  static const int _maxPollingAttempts = 20; // ~80s à 4s d'intervalle
+  static const int _maxPollingAttemptsMobileMoney = 20; // ~80s à 4s d'intervalle
+  static const int _maxPollingAttemptsCarte = 60; // ~5min : le temps de payer sur la page Stripe
+
+  // Paiement carte en attente de confirmation (le candidat est parti sur la page
+  // Stripe dans le navigateur externe) : on revérifie dès qu'il revient sur l'appli.
+  String? _pendingCardPaiementId;
+
+  // Reflète immédiatement un paiement confirmé pendant cette session, sans
+  // attendre un retour à l'écran d'accueil (qui recharge les données du candidat).
+  String? _statutOverride;
 
   PaiementInfo? get _paiementInfo => widget.candidat?.paiement;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadHistory();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pollingTimer?.cancel();
     _numeroTelephoneController.dispose();
     _montantController.dispose();
     super.dispose();
   }
 
-  void _startPollingStatus(String paiementId) {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Le candidat revient dans l'appli après être allé payer par carte sur la
+    // page Stripe ouverte dans le navigateur externe : on vérifie tout de suite
+    // au lieu d'attendre le prochain cycle du polling.
+    if (state == AppLifecycleState.resumed && _pendingCardPaiementId != null) {
+      _checkStatusOnce(_pendingCardPaiementId!);
+      _loadHistory();
+    }
+  }
+
+  Future<void> _checkStatusOnce(String paiementId) async {
+    try {
+      final response = await ApiClient.get(ApiConfig.paiementStatus(paiementId));
+      final statut = response is Map<String, dynamic> ? response['statut'] as String? : null;
+      final terminal = statut != null &&
+          {'PAYE', 'SUCCES', 'ECHEC', 'ANNULE', 'REMBOURSEMENT'}.contains(statut);
+      if (terminal) {
+        _pollingTimer?.cancel();
+        if (mounted) setState(() {
+          _isPolling = false;
+          _statutOverride = statut;
+        });
+        _pendingCardPaiementId = null;
+        _notifyStatutFinal(statut!);
+        await _loadHistory();
+      }
+    } catch (_) {
+      // Ignoré : le polling en cours (ou le prochain retour dans l'appli) réessaiera.
+    }
+  }
+
+  void _notifyStatutFinal(String statut) {
+    if (!mounted) return;
+    final reussi = statut == 'PAYE' || statut == 'SUCCES';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(reussi ? 'Paiement confirmé !' : 'Paiement ${_statutLabel(statut).toLowerCase()}.'),
+        backgroundColor: reussi ? Colors.green : Colors.red,
+      ),
+    );
+  }
+
+  void _startPollingStatus(String paiementId, {required bool isCarte}) {
     _pollingTimer?.cancel();
     _pollingAttempts = 0;
+    if (isCarte) _pendingCardPaiementId = paiementId;
     setState(() => _isPolling = true);
+    final maxAttempts = isCarte ? _maxPollingAttemptsCarte : _maxPollingAttemptsMobileMoney;
 
-    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       _pollingAttempts++;
       try {
         final response = await ApiClient.get(ApiConfig.paiementStatus(paiementId));
@@ -62,10 +118,14 @@ class _PaiementScreenState extends State<PaiementScreen> {
         final terminal = statut != null &&
             {'PAYE', 'SUCCES', 'ECHEC', 'ANNULE', 'REMBOURSEMENT'}.contains(statut);
 
-        if (terminal || _pollingAttempts >= _maxPollingAttempts) {
+        if (terminal || _pollingAttempts >= maxAttempts) {
           timer.cancel();
+          _pendingCardPaiementId = null;
           if (!mounted) return;
-          setState(() => _isPolling = false);
+          setState(() {
+            _isPolling = false;
+            if (terminal) _statutOverride = statut;
+          });
           if (statut != null) {
             final reussi = statut == 'PAYE' || statut == 'SUCCES';
             ScaffoldMessenger.of(context).showSnackBar(
@@ -83,8 +143,9 @@ class _PaiementScreenState extends State<PaiementScreen> {
         }
       } catch (_) {
         // Erreur réseau ponctuelle : on retente au prochain cycle, sans bloquer l'utilisateur.
-        if (_pollingAttempts >= _maxPollingAttempts) {
+        if (_pollingAttempts >= maxAttempts) {
           timer.cancel();
+          _pendingCardPaiementId = null;
           if (mounted) setState(() => _isPolling = false);
         }
       }
@@ -142,22 +203,26 @@ class _PaiementScreenState extends State<PaiementScreen> {
         final uri = Uri.parse(url);
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          throw Exception('Impossible d\'ouvrir la page de paiement sécurisée');
         }
       }
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_isMobileMoney
               ? 'Paiement initié. Validez la transaction depuis votre téléphone (${AppConstants.modePaiementLabels[_modePaiement]}).'
-              : 'Redirection vers la page de paiement sécurisée...'),
+              : 'Redirection vers la page de paiement sécurisée. Reviens ici une fois le paiement terminé.'),
           backgroundColor: Colors.green,
+          duration: const Duration(seconds: 5),
         ),
       );
 
       await _loadHistory();
 
-      if (_isMobileMoney && paiementId != null) {
-        _startPollingStatus(paiementId);
+      if (paiementId != null) {
+        _startPollingStatus(paiementId, isCarte: !_isMobileMoney);
       }
     } catch (e) {
       if (mounted) {
@@ -201,7 +266,7 @@ class _PaiementScreenState extends State<PaiementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final estPaye = _paiementInfo?.statut == 'PAYE';
+    final estPaye = _statutOverride == 'PAYE' || (_statutOverride == null && _paiementInfo?.statut == 'PAYE');
 
     return Scaffold(
       appBar: AppBar(title: const Text('Paiement des frais')),
@@ -223,16 +288,21 @@ class _PaiementScreenState extends State<PaiementScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
-                    children: const [
-                      SizedBox(
+                    children: [
+                      const SizedBox(
                         height: 16,
                         width: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
+                      const SizedBox(width: 12),
+                      const Expanded(
                         child: Text('Vérification du paiement en cours...'),
                       ),
+                      if (_pendingCardPaiementId != null)
+                        TextButton(
+                          onPressed: () => _checkStatusOnce(_pendingCardPaiementId!),
+                          child: const Text('Vérifier maintenant'),
+                        ),
                     ],
                   ),
                 ),
@@ -274,7 +344,7 @@ class _PaiementScreenState extends State<PaiementScreen> {
   }
 
   Widget _buildStatusCard() {
-    final statut = _paiementInfo?.statut ?? 'NON_PAYE';
+    final statut = _statutOverride ?? _paiementInfo?.statut ?? 'NON_PAYE';
     final color = _statutColor(statut);
     return Container(
       padding: const EdgeInsets.all(20),

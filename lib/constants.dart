@@ -8,7 +8,7 @@
 class ApiConfig {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:5000',
+    defaultValue: 'http://10.74.204.53:5000',
   );
 
   static const String apiPrefix = '$baseUrl/api';
@@ -63,7 +63,7 @@ class ApiConfig {
 }
 
 class AppConstants {
-  static const String appName = 'ExamGest MG';
+  static const String appName = 'Exam Mada';
   static const String tagline = 'Votre examen, simplifié.';
 
   static const List<String> genres = ['M', 'F'];

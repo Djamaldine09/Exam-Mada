@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
 
+  lottie: ^3.1.2
   # Réseau
   http: ^1.2.2
 
@@ -44,6 +45,8 @@ dependencies:
   # Connexion Google
   google_sign_in: ^6.2.1
 
+  shared_preferences: ^2.5.3 
+
   # Animations douces
   animate_do: ^3.3.4
 
@@ -54,3 +57,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - asset/lottie/
+    - asset/images/logo-app.png

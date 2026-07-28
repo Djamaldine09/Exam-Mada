@@ -1,4 +1,4 @@
-package com.example.frontend
+package mg.exammada.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 
