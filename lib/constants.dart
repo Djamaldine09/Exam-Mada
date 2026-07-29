@@ -16,6 +16,7 @@ class ApiConfig {
   // Endpoints
   static const String register = '$apiPrefix/auth/register';
   static const String login = '$apiPrefix/auth/login';
+  static const String loginTwoFactor = '$apiPrefix/auth/login/2fa';
   static const String loginPhone = '$apiPrefix/auth/phone';
   static const String forgotPassword = '$apiPrefix/auth/forgot-password';
   static const String resetPassword = '$apiPrefix/auth/reset-password';

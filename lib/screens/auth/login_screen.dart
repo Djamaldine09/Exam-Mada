@@ -21,8 +21,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _twoFactorCodeController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  String? _twoFactorToken;
+  String? _twoFactorPhone;
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -39,6 +42,20 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (response != null) {
+        if (response['requiresTwoFactor'] == true) {
+          setState(() {
+            _twoFactorToken = response['twoFactorToken'] as String?;
+            _twoFactorPhone = response['maskedTelephone'] as String?;
+            _twoFactorCodeController.clear();
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Code 2FA envoyé par SMS')),
+            );
+          }
+          return;
+        }
+
         final token = response['token'] as String?;
         final user = response as Map<String, dynamic>?;
         
@@ -59,6 +76,52 @@ class _LoginScreenState extends State<LoginScreen> {
           SnackBar(content: Text('Erreur: $e'), duration: const Duration(seconds: 5)),
         );
         print('Login error: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _verifyTwoFactor() async {
+    final token2fa = _twoFactorToken;
+    final code = _twoFactorCodeController.text.trim();
+
+    if (token2fa == null || code.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Entrez le code 2FA à 6 chiffres')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await ApiClient.post(
+        ApiConfig.loginTwoFactor,
+        body: {
+          'twoFactorToken': token2fa,
+          'code': code,
+        },
+      );
+
+      final token = response['token'] as String?;
+      if (token == null) {
+        throw Exception('Réponse 2FA invalide');
+      }
+
+      await StorageService.saveToken(token);
+      await StorageService.saveUser(AppUser.fromJson(response));
+
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur 2FA: $e'), duration: const Duration(seconds: 5)),
+        );
       }
     } finally {
       if (mounted) {
@@ -249,12 +312,63 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                 ),
+                if (_twoFactorToken != null) ...[
+                  const SizedBox(height: 16),
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 800),
+                    delay: const Duration(milliseconds: 350),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Text(
+                        _twoFactorPhone == null
+                            ? 'Code 2FA envoyé à votre numéro enregistré.'
+                            : 'Code 2FA envoyé au numéro $_twoFactorPhone.',
+                        style: TextStyle(color: Colors.green.shade800),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 800),
+                    delay: const Duration(milliseconds: 400),
+                    child: TextFormField(
+                      controller: _twoFactorCodeController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      decoration: const InputDecoration(
+                        labelText: 'Code 2FA',
+                        counterText: '',
+                        prefixIcon: Icon(Icons.verified_user_outlined),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                            setState(() {
+                              _twoFactorToken = null;
+                              _twoFactorPhone = null;
+                              _twoFactorCodeController.clear();
+                            });
+                          },
+                    child: const Text('Modifier email ou mot de passe'),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 FadeInUp(
                   duration: const Duration(milliseconds: 800),
                   delay: const Duration(milliseconds: 400),
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
+                    onPressed: _isLoading
+                        ? null
+                        : (_twoFactorToken == null ? _login : _verifyTwoFactor),
                     child: _isLoading
                         ? const SizedBox(
                             height: 20,
@@ -264,7 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text('Se connecter'),
+                        : Text(_twoFactorToken == null ? 'Se connecter' : 'Valider le code 2FA'),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -353,6 +467,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _twoFactorCodeController.dispose();
     super.dispose();
   }
 }
