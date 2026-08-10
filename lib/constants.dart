@@ -8,7 +8,7 @@
 class ApiConfig {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.74.204.53:5000',
+    defaultValue: 'https://backend-gestion-kask.onrender.com',
   );
 
   static const String apiPrefix = '$baseUrl/api';

@@ -1,14 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// [AJOUT FIREBASE] : Imports nécessaires pour Firebase et FCM
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase_options.dart'; // Fichier généré par la commande flutterfire configure
+
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'services/storage_service.dart';
 import 'theme/theme.dart';
 
+// [AJOUT FIREBASE] : Handler pour écouter les notifications en arrière-plan
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint("Notification reçue en arrière-plan : ${message.notification?.title}");
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // [AJOUT FIREBASE] : Initialisation de Firebase avant le reste de l'application
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // [AJOUT FIREBASE] : Enregistrement du handler d'arrière-plan
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   await StorageService.init();
 
@@ -47,6 +67,45 @@ class _AppInitializerState extends State<AppInitializer> {
   void initState() {
     super.initState();
     _initializeApp();
+    _setupFCM(); // [AJOUT FIREBASE] : Appel de la configuration des notifications
+  }
+
+  // [AJOUT FIREBASE] : Méthode pour configurer les permissions et écouter les messages
+  Future<void> _setupFCM() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    // 1. Demande de permissions (requis pour iOS et Android 13+)
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      debugPrint('Permissions de notification accordées');
+      
+      // 2. Récupération du token pour cet appareil
+      try {
+        String? token = await messaging.getToken();
+        debugPrint("FCM Device Token: $token");
+        // TODO: Envoyer ce token à votre backend si nécessaire pour cibler cet utilisateur
+      } catch (e) {
+        debugPrint("Erreur lors de la récupération du token FCM: $e");
+      }
+
+      // 3. Écoute des notifications quand l'app est ouverte (premier plan)
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint("Message reçu au premier plan : ${message.notification?.title}");
+        // Note: Sur Android, les notifications au premier plan n'affichent pas de popup par défaut.
+        // Il faut utiliser flutter_local_notifications si vous voulez forcer l'affichage.
+      });
+
+      // 4. Action au clic sur la notification (quand l'app est en arrière-plan)
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        debugPrint("L'utilisateur a cliqué sur la notification !");
+        // Vous pouvez naviguer vers un écran spécifique ici selon les données du message
+      });
+    }
   }
 
   Future<void> _initializeApp() async {

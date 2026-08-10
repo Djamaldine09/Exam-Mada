@@ -16,10 +16,16 @@ Lance ensuite l'application avec ton client ID web :
 flutter run -d chrome --web-hostname localhost --web-port 3001 --dart-define=GOOGLE_WEB_CLIENT_ID=ton-client-id-web.apps.googleusercontent.com
 ```
 
-Si l'API backend n'est pas sur `http://localhost:5000`, passe aussi :
+Par défaut, l'application pointe vers le backend Render :
+
+```txt
+https://backend-gestion-kask.onrender.com
+```
+
+Pour utiliser une autre API, passe aussi :
 
 ```bash
-flutter run -d chrome --web-hostname localhost --web-port 3001 --dart-define=API_BASE_URL=http://localhost:5000 --dart-define=GOOGLE_WEB_CLIENT_ID=198209309688-ulk5udgji1kt2kv4utrf4pq36mvdfrc2.apps.googleusercontent.com
+flutter run -d chrome --web-hostname localhost --web-port 3001 --dart-define=API_BASE_URL=https://backend-gestion-kask.onrender.com --dart-define=GOOGLE_WEB_CLIENT_ID=198209309688-ulk5udgji1kt2kv4utrf4pq36mvdfrc2.apps.googleusercontent.com
 ```
 
 ## Getting Started

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "942950500031",
+    "project_id": "examgest-a96f9",
+    "storage_bucket": "examgest-a96f9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:942950500031:android:882260a562496c5a20e80a",
+        "android_client_info": {
+          "package_name": "mg.exammada.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgqYXEtCNULr95XkjOb4PAquuDjso_xc8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
