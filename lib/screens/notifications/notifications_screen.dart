@@ -28,9 +28,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
     try {
       final response = await ApiClient.get(ApiConfig.notifications);
-      final list = (response as List<dynamic>? ?? [])
-          .map((e) => AppNotification.fromJson(e as Map<String, dynamic>))
-          .toList();
+      // Le backend renvoie { notifications: [...], unreadCount: n }
+      final rawList = response is Map<String, dynamic>
+          ? response['notifications'] as List<dynamic>? ?? []
+          : (response as List<dynamic>? ?? []);
+      final list = rawList.map((e) => AppNotification.fromJson(e as Map<String, dynamic>)).toList();
       setState(() => _notifications = list);
     } catch (e) {
       setState(() => _errorMessage = 'Erreur : $e');
