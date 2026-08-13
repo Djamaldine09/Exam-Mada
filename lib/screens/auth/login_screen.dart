@@ -58,13 +58,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
         final token = response['token'] as String?;
         final user = response as Map<String, dynamic>?;
-        
+
         if (token != null) {
           await StorageService.saveToken(token);
           if (user != null) {
             await StorageService.saveUser(AppUser.fromJson(user));
           }
-          
+
           if (mounted) {
             Navigator.of(context).pushReplacementNamed('/');
           }
@@ -73,7 +73,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), duration: const Duration(seconds: 5)),
+          SnackBar(
+              content: Text('Erreur: $e'),
+              duration: const Duration(seconds: 5)),
         );
         print('Login error: $e');
       }
@@ -120,7 +122,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur 2FA: $e'), duration: const Duration(seconds: 5)),
+          SnackBar(
+              content: Text('Erreur 2FA: $e'),
+              duration: const Duration(seconds: 5)),
         );
       }
     } finally {
@@ -134,7 +138,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Entrez votre email ci-dessus puis réessayez')),
+        const SnackBar(
+            content: Text('Entrez votre email ci-dessus puis réessayez')),
       );
       return;
     }
@@ -142,12 +147,15 @@ class _LoginScreenState extends State<LoginScreen> {
       await ApiClient.post(ApiConfig.forgotPassword, body: {'email': email});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Si cet email existe, un lien de réinitialisation a été envoyé.')),
+          const SnackBar(
+              content: Text(
+                  'Si cet email existe, un lien de réinitialisation a été envoyé.')),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Erreur : $e')));
       }
     }
   }
@@ -191,7 +199,8 @@ class _LoginScreenState extends State<LoginScreen> {
         throw Exception('Réponse de connexion Google invalide');
       }
 
-      await StorageService.saveSession(token: token, user: AppUser.fromJson(userJson));
+      await StorageService.saveSession(
+          token: token, user: AppUser.fromJson(userJson));
 
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/');
@@ -230,16 +239,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     children: [
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 96,
+                        height: 96,
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primary,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(50),
                         ),
-                        child: const Icon(
-                          Icons.school,
-                          size: 40,
-                          color: Colors.white,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(50),
+                          child: Padding(
+                            padding: const EdgeInsets.all(0),
+                            child: Image.asset(
+                              'asset/images/logo-icon.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -252,8 +266,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         AppConstants.tagline,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                       ),
                     ],
                   ),
@@ -369,16 +383,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: _isLoading
                         ? null
                         : (_twoFactorToken == null ? _login : _verifyTwoFactor),
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                    ),
                     child: _isLoading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : Text(_twoFactorToken == null ? 'Se connecter' : 'Valider le code 2FA'),
+                        : Text(_twoFactorToken == null
+                            ? 'Se connecter'
+                            : 'Valider le code 2FA'),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -392,7 +414,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
                           'ou continuer avec',
-                          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                          style:
+                              TextStyle(color: Colors.grey[600], fontSize: 14),
                         ),
                       ),
                       Expanded(child: Divider(color: Colors.grey[300])),
@@ -405,11 +428,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   delay: const Duration(milliseconds: 600),
                   child: OutlinedButton.icon(
                     onPressed: _isLoading ? null : _signInWithGoogle,
-                    icon: const Icon(Icons.g_mobiledata, size: 24),
+                    icon: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Image.asset(
+                        'asset/images/google_logo.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                     label: const Text('Google'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(52),
                       side: BorderSide(color: Colors.grey[300]!),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
                     ),
                   ),
                 ),
@@ -419,11 +452,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   delay: const Duration(milliseconds: 650),
                   child: OutlinedButton.icon(
                     onPressed: _isLoading ? null : _goToOtpLogin,
-                    icon: const Icon(Icons.phone_android_outlined, size: 22),
                     label: const Text('Se connecter par téléphone'),
                     style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
                       minimumSize: const Size.fromHeight(52),
-                      side: BorderSide(color: Colors.grey[300]!),
+                      side: BorderSide(color: Colors.black),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
                     ),
                   ),
                 ),
@@ -447,7 +484,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                            MaterialPageRoute(
+                                builder: (_) => const RegisterScreen()),
                           );
                         },
                         child: const Text("S'inscrire"),

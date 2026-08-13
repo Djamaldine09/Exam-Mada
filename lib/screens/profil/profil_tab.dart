@@ -1,12 +1,18 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../model/candidat.dart';
 import '../../model/user.dart';
+import '../../services/api_client.dart';
+import '../../services/storage_service.dart';
+import '../../theme/theme_provider.dart';
 import '../documents/documents_screen.dart';
 import '../inscription/inscription_screen.dart';
 import '../notifications/notifications_screen.dart';
 
-class ProfilTab extends StatelessWidget {
+class ProfilTab extends StatefulWidget {
   final AppUser? currentUser;
   final Candidat? candidat;
   final Future<void> Function() onRefresh;
@@ -21,8 +27,73 @@ class ProfilTab extends StatelessWidget {
   });
 
   @override
+  State<ProfilTab> createState() => _ProfilTabState();
+}
+
+class _ProfilTabState extends State<ProfilTab> {
+  bool _isUploadingPhoto = false;
+  final ImagePicker _imagePicker = ImagePicker();
+
+  Future<void> _pickAndUploadPhoto() async {
+    final pickedFile = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 1200,
+      maxHeight: 1200,
+    );
+
+    if (pickedFile == null) {
+      return;
+    }
+
+    setState(() {
+      _isUploadingPhoto = true;
+    });
+
+    try {
+      final file = File(pickedFile.path);
+      final response = await ApiClient.uploadProfilePhoto(file: file);
+      final userData = response is Map<String, dynamic>
+          ? response['user'] as Map<String, dynamic>?
+          : null;
+
+      if (userData == null) {
+        throw Exception('La réponse du serveur est invalide.');
+      }
+
+      final updatedUser = AppUser.fromJson(userData);
+      await StorageService.saveUser(updatedUser);
+      await widget.onRefresh();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Photo de profil mise à jour.')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Erreur upload photo de profil: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Échec de l’upload de la photo : $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingPhoto = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final themeMode = ThemeModeProvider.of(context).mode;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentUser = widget.currentUser;
+    final candidat = widget.candidat;
+    final onRefresh = widget.onRefresh;
+    final onLogout = widget.onLogout;
     final fullName = currentUser?.displayName.trim().isNotEmpty == true
         ? currentUser!.displayName
         : 'Candidat ExamGest';
@@ -40,7 +111,15 @@ class ProfilTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _ProfileHeader(fullName: fullName, email: email, status: status, isDark: isDark),
+              _ProfileHeader(
+                fullName: fullName,
+                email: email,
+                status: status,
+                isDark: isDark,
+                isUploadingPhoto: _isUploadingPhoto,
+                currentUser: currentUser,
+                onEditPhoto: _pickAndUploadPhoto,
+              ),
               const SizedBox(height: 24),
               Text(
                 'Profil',
@@ -50,7 +129,8 @@ class ProfilTab extends StatelessWidget {
                     ),
               ),
               const SizedBox(height: 18),
-              _ProfileInfoCard(currentUser: currentUser, candidat: candidat, isDark: isDark),
+              _ProfileInfoCard(
+                  currentUser: currentUser, candidat: candidat, isDark: isDark),
               const SizedBox(height: 24),
               _SettingsSection(
                 isDark: isDark,
@@ -62,7 +142,9 @@ class ProfilTab extends StatelessWidget {
                     isDark: isDark,
                     onTap: () {
                       Navigator.of(context)
-                          .push(MaterialPageRoute(builder: (_) => InscriptionScreen(candidat: candidat)))
+                          .push(MaterialPageRoute(
+                              builder: (_) =>
+                                  InscriptionScreen(candidat: candidat)))
                           .then((_) => onRefresh());
                     },
                   ),
@@ -72,7 +154,8 @@ class ProfilTab extends StatelessWidget {
                     title: 'Mes documents',
                     subtitle: 'Pièces justificatives et fichiers déposés',
                     isDark: isDark,
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DocumentsScreen())),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => const DocumentsScreen())),
                   ),
                   _ProfileDivider(isDark: isDark),
                   _ProfileMenuItem(
@@ -80,7 +163,8 @@ class ProfilTab extends StatelessWidget {
                     title: 'Notifications',
                     subtitle: 'Gérer les alertes et les rappels',
                     isDark: isDark,
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen())),
                   ),
                 ],
               ),
@@ -93,15 +177,20 @@ class ProfilTab extends StatelessWidget {
                     title: 'Langue',
                     subtitle: 'Français',
                     isDark: isDark,
-                    onTap: () => _showInfo(context, 'La sélection de langue sera disponible prochainement.'),
+                    onTap: () => _showInfo(context,
+                        'La sélection de langue sera disponible prochainement.'),
                   ),
                   _ProfileDivider(isDark: isDark),
                   _ProfileMenuItem(
                     icon: Icons.palette_outlined,
                     title: 'Apparence',
-                    subtitle: isDark ? 'Mode sombre' : 'Mode clair',
+                    subtitle: themeMode == ThemeMode.dark
+                        ? 'Mode sombre'
+                        : themeMode == ThemeMode.light
+                            ? 'Mode clair'
+                            : 'Suivre le système',
                     isDark: isDark,
-                    onTap: () => _showInfo(context, 'La sélection du thème sera disponible prochainement.'),
+                    onTap: () => _showThemeSelectionDialog(context, themeMode),
                   ),
                   _ProfileDivider(isDark: isDark),
                   _ProfileMenuItem(
@@ -109,7 +198,8 @@ class ProfilTab extends StatelessWidget {
                     title: 'Sécurité du compte',
                     subtitle: 'Protéger votre compte ExamGest',
                     isDark: isDark,
-                    onTap: () => _showInfo(context, 'Les options de sécurité seront disponibles prochainement.'),
+                    onTap: () => _showInfo(context,
+                        'Les options de sécurité seront disponibles prochainement.'),
                   ),
                 ],
               ),
@@ -124,12 +214,13 @@ class ProfilTab extends StatelessWidget {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(35),
                       side: BorderSide(color: Colors.red.withOpacity(0.3)),
                     ),
                   ),
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Se déconnecter', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  label: const Text('Se déconnecter',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -140,7 +231,53 @@ class ProfilTab extends StatelessWidget {
   }
 
   void _showInfo(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showThemeSelectionDialog(
+      BuildContext context, ThemeMode currentMode) async {
+    final selectedMode = await showDialog<ThemeMode>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Choisir l’apparence'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<ThemeMode>(
+                value: ThemeMode.system,
+                groupValue: currentMode,
+                title: const Text('Suivre le système'),
+                onChanged: (mode) => Navigator.of(context).pop(mode),
+              ),
+              RadioListTile<ThemeMode>(
+                value: ThemeMode.light,
+                groupValue: currentMode,
+                title: const Text('Mode clair'),
+                onChanged: (mode) => Navigator.of(context).pop(mode),
+              ),
+              RadioListTile<ThemeMode>(
+                value: ThemeMode.dark,
+                groupValue: currentMode,
+                title: const Text('Mode sombre'),
+                onChanged: (mode) => Navigator.of(context).pop(mode),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Annuler'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selectedMode != null) {
+      await ThemeModeProvider.of(context).setThemeMode(selectedMode);
+    }
   }
 }
 
@@ -149,12 +286,19 @@ class _ProfileHeader extends StatelessWidget {
   final String email;
   final String status;
   final bool isDark;
+  final AppUser? currentUser;
+
+  final VoidCallback onEditPhoto;
+  final bool isUploadingPhoto;
 
   const _ProfileHeader({
     required this.fullName,
     required this.email,
     required this.status,
     required this.isDark,
+    required this.currentUser,
+    required this.onEditPhoto,
+    required this.isUploadingPhoto,
   });
 
   @override
@@ -168,19 +312,58 @@ class _ProfileHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 31,
-            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.12),
-            child: Icon(Icons.person_outline, color: Theme.of(context).colorScheme.primary, size: 34),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              GestureDetector(
+                onTap: onEditPhoto,
+                child: CircleAvatar(
+                  radius: 31,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                  backgroundImage: currentUser?.photoUrl != null
+                      ? NetworkImage(currentUser!.photoUrl!)
+                      : null,
+                  child: currentUser?.photoUrl == null
+                      ? Icon(Icons.person_outline,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 34)
+                      : null,
+                ),
+              ),
+              if (isUploadingPhoto)
+                const Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                        color: Colors.black26, shape: BoxShape.circle),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(fullName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                Text(fullName,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
-                Text(email, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Colors.grey[600])),
+                Text(email,
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelMedium
+                        ?.copyWith(color: Colors.grey[600])),
                 const SizedBox(height: 8),
                 _StatusPill(status: status),
               ],
@@ -197,26 +380,51 @@ class _ProfileInfoCard extends StatelessWidget {
   final Candidat? candidat;
   final bool isDark;
 
-  const _ProfileInfoCard({required this.currentUser, required this.candidat, required this.isDark});
+  const _ProfileInfoCard(
+      {required this.currentUser,
+      required this.candidat,
+      required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     final fields = <Widget>[
-      _ProfileField(icon: Icons.person_outline, label: 'Nom', value: currentUser?.nom ?? 'Non renseigné'),
+      _ProfileField(
+          icon: Icons.person_outline,
+          label: 'Nom',
+          value: currentUser?.nom ?? 'Non renseigné'),
       if (currentUser?.prenom != null)
-        _ProfileField(icon: Icons.badge_outlined, label: 'Prénom', value: currentUser!.prenom!),
-      _ProfileField(icon: Icons.mail_outline, label: 'Email', value: currentUser?.email ?? 'Non renseigné'),
+        _ProfileField(
+            icon: Icons.badge_outlined,
+            label: 'Prénom',
+            value: currentUser!.prenom!),
+      _ProfileField(
+          icon: Icons.mail_outline,
+          label: 'Email',
+          value: currentUser?.email ?? 'Non renseigné'),
       if (currentUser?.telephone != null)
-        _ProfileField(icon: Icons.phone_android_outlined, label: 'Téléphone', value: currentUser!.telephone!),
+        _ProfileField(
+            icon: Icons.phone_android_outlined,
+            label: 'Téléphone',
+            value: currentUser!.telephone!),
       if (candidat?.numeroMatricule != null)
-        _ProfileField(icon: Icons.school_outlined, label: 'Matricule', value: candidat!.numeroMatricule!),
+        _ProfileField(
+            icon: Icons.school_outlined,
+            label: 'Matricule',
+            value: candidat!.numeroMatricule!),
       if (candidat != null)
-        _ProfileField(icon: Icons.menu_book_outlined, label: 'Examen', value: candidat!.examen),
+        _ProfileField(
+            icon: Icons.menu_book_outlined,
+            label: 'Examen',
+            value: candidat!.examen),
       if (candidat != null)
-        _ProfileField(icon: Icons.track_changes_outlined, label: 'Série/Filière', value: candidat!.serieFiliere),
+        _ProfileField(
+            icon: Icons.track_changes_outlined,
+            label: 'Série/Filière',
+            value: candidat!.serieFiliere),
     ];
 
-    return _SettingsSection(isDark: isDark, children: _withDividers(fields, isDark));
+    return _SettingsSection(
+        isDark: isDark, children: _withDividers(fields, isDark));
   }
 }
 
@@ -271,7 +479,8 @@ class _ProfileField extends StatelessWidget {
   final String label;
   final String value;
 
-  const _ProfileField({required this.icon, required this.label, required this.value});
+  const _ProfileField(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -285,9 +494,17 @@ class _ProfileField extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
+                Text(label,
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelSmall
+                        ?.copyWith(color: Colors.grey[600])),
                 const SizedBox(height: 4),
-                Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text(value,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -304,7 +521,8 @@ class _ProfileDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Divider(height: 1, indent: 56, color: isDark ? Colors.white10 : Colors.black12);
+    return Divider(
+        height: 1, indent: 56, color: isDark ? Colors.white10 : Colors.black12);
   }
 }
 
@@ -326,7 +544,9 @@ class _StatusPill extends StatelessWidget {
         color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(status, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+      child: Text(status,
+          style: TextStyle(
+              color: color, fontWeight: FontWeight.w700, fontSize: 12)),
     );
   }
 }

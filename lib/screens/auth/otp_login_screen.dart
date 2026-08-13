@@ -107,7 +107,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                 child: Icon(
                   Icons.sms_outlined,
                   size: 56,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: Colors.black,
                 ),
               ),
               const SizedBox(height: 20),
@@ -140,9 +140,17 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _isLoading ? null : (_codeSent ? _verifyCode : _sendCode),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(35),
+                  ),
+                  minimumSize: const Size.fromHeight(52),
+                ),
                 child: _isLoading
                     ? const SizedBox(
                         height: 20,

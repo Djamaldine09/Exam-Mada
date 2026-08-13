@@ -30,6 +30,8 @@ dependencies:
 
   # QR Code (convocation)
   qr_flutter: ^4.1.0
+  flutter_map: ^5.0.0
+  latlong2: ^0.9.0
 
   # Ouverture de liens externes (paiement Stripe Checkout)
   url_launcher: ^6.3.1
@@ -73,3 +75,5 @@ flutter:
   assets:
     - asset/lottie/
     - asset/images/logo-app.png
+    - asset/images/logo-icon.png
+    - asset/images/google_logo.png

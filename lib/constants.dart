@@ -34,9 +34,11 @@ class ApiConfig {
   static const String inscriptionProfile = '$apiPrefix/inscription/profile';
   static const String inscriptionSubmit = '$apiPrefix/inscription/submit';
   static const String inscriptionDocuments = '$apiPrefix/inscription/documents';
+  static const String profilePhoto = '$apiPrefix/auth/me/photo';
 
   static const String candidatMe = '$apiPrefix/candidats/me';
-  static const String candidatConvocation = '$apiPrefix/candidats/me/convocation';
+  static const String candidatConvocation =
+      '$apiPrefix/candidats/me/convocation';
   static const String candidatPlanning = '$apiPrefix/candidats/me/planning';
   static const String candidatDocuments = '$apiPrefix/candidats/me/documents';
 
@@ -47,20 +49,25 @@ class ApiConfig {
   static String paiementStatus(String transactionId) =>
       '$apiPrefix/paiement/$transactionId/status';
 
-  static const String stripeCheckoutSession = '$apiPrefix/stripe/checkout-session';
+  static const String stripeCheckoutSession =
+      '$apiPrefix/stripe/checkout-session';
   static const String stripeHistory = '$apiPrefix/stripe/history';
-  static String stripeStatus(String paiementId) => '$apiPrefix/stripe/paiement/$paiementId';
+  static String stripeStatus(String paiementId) =>
+      '$apiPrefix/stripe/paiement/$paiementId';
 
   static const String monResultat = '$apiPrefix/resultats/mon-resultat';
 
   static const String releveNotesPdf = '$apiPrefix/documents/releve-notes';
   static const String convocationPdf = '$apiPrefix/documents/convocation';
-  static const String bulletinVersementPdf = '$apiPrefix/documents/bulletin-versement';
+  static const String bulletinVersementPdf =
+      '$apiPrefix/documents/bulletin-versement';
   static const String piecesStatus = '$apiPrefix/documents/pieces/status';
-  static String justificatif(String type) => '$apiPrefix/documents/justificatif/$type';
+  static String justificatif(String type) =>
+      '$apiPrefix/documents/justificatif/$type';
 
   static const String notifications = '$apiPrefix/notifications';
-  static String notificationRead(String id) => '$apiPrefix/notifications/$id/read';
+  static String notificationRead(String id) =>
+      '$apiPrefix/notifications/$id/read';
 }
 
 class AppConstants {
@@ -93,6 +100,7 @@ class AppConstants {
 
   static const secureStorageTokenKey = 'examgest_token';
   static const secureStorageUserKey = 'examgest_user';
+  static const String themeModeKey = 'examgest_theme_mode';
 
   /// Montant par défaut des frais d'examen (Ariary).
   static const num montantExamenDefaut = 15000;

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../model/candidat.dart';
 import '../../model/user.dart';
 import '../convocation/convocation_screen.dart';
 import '../inscription/inscription_screen.dart';
+import '../itineraire_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../paiement/paiement_screen.dart';
 import '../resultats/resultats_screen.dart';
@@ -27,17 +29,18 @@ class HomeTab extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+        padding:
+            const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const _WeeklyCalendar(),
             const SizedBox(height: 20),
-            _WelcomeCard(currentUser: currentUser, candidat: candidat),
-            const SizedBox(height: 20),
-            if (candidat == null || candidat!.statutInscription == 'BROUILLON') ...[
-              _IncompleteProfileBanner(candidat: candidat, onRefresh: onRefresh),
+            if (candidat == null ||
+                candidat!.statutInscription == 'BROUILLON') ...[
+              _IncompleteProfileBanner(
+                  candidat: candidat, onRefresh: onRefresh),
               const SizedBox(height: 20),
             ],
             _QuickActionsGrid(candidat: candidat, onRefresh: onRefresh),
@@ -78,9 +81,15 @@ class _WeeklyCalendar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    final dates = [22, 23, 24, 25, 26, 27, 28];
-    const selectedIndex = 3;
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final days = List.generate(
+        7,
+        (index) => DateFormat('E', 'fr_FR')
+            .format(startOfWeek.add(Duration(days: index))));
+    final dates =
+        List.generate(7, (index) => startOfWeek.add(Duration(days: index)).day);
+    final selectedIndex = now.weekday - 1;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SingleChildScrollView(
@@ -96,7 +105,10 @@ class _WeeklyCalendar extends StatelessWidget {
                   ? (isDark ? Colors.white : Colors.black)
                   : (isDark ? Colors.grey[800] : Colors.white),
               borderRadius: BorderRadius.circular(20),
-              border: isSelected ? null : Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[300]!),
+              border: isSelected
+                  ? null
+                  : Border.all(
+                      color: isDark ? Colors.grey[700]! : Colors.grey[300]!),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -131,67 +143,12 @@ class _WeeklyCalendar extends StatelessWidget {
   }
 }
 
-class _WelcomeCard extends StatelessWidget {
-  final AppUser? currentUser;
-  final Candidat? candidat;
-
-  const _WelcomeCard({required this.currentUser, required this.candidat});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final gradientColor = isDark ? Colors.blue[700] : Colors.blue[600];
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            gradientColor ?? Colors.blue,
-            (isDark ? Colors.blue[900] : Colors.blue[400]) ?? Colors.lightBlue,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: (gradientColor ?? Colors.blue).withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Bonjour, ${currentUser?.displayName.split(' ').first ?? 'Candidat'}!',
-            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Text(
-              'Statut: ${candidat?.statutInscription ?? 'En cours'}',
-              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _IncompleteProfileBanner extends StatelessWidget {
   final Candidat? candidat;
   final Future<void> Function() onRefresh;
 
-  const _IncompleteProfileBanner({required this.candidat, required this.onRefresh});
+  const _IncompleteProfileBanner(
+      {required this.candidat, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -209,13 +166,17 @@ class _IncompleteProfileBanner extends StatelessWidget {
           Expanded(
             child: Text(
               'Complétez votre dossier de candidature pour continuer.',
-              style: TextStyle(color: Colors.orange[900], fontWeight: FontWeight.w500, fontSize: 13),
+              style: TextStyle(
+                  color: Colors.orange[900],
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13),
             ),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => InscriptionScreen(candidat: candidat)))
+                  .push(MaterialPageRoute(
+                      builder: (_) => InscriptionScreen(candidat: candidat)))
                   .then((_) => onRefresh());
             },
             child: const Text('Compléter'),
@@ -239,27 +200,31 @@ class _QuickActionsGrid extends StatelessWidget {
         icon: Icons.qr_code_2_outlined,
         label: 'Convocation',
         color: Colors.indigo,
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ConvocationScreen())),
+        onTap: () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const ConvocationScreen())),
       ),
       _QuickAction(
         icon: Icons.payment_outlined,
         label: 'Paiement',
         color: Colors.teal,
         onTap: () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => PaiementScreen(candidat: candidat)))
+            .push(MaterialPageRoute(
+                builder: (_) => PaiementScreen(candidat: candidat)))
             .then((_) => onRefresh()),
       ),
       _QuickAction(
         icon: Icons.workspace_premium_outlined,
         label: 'Résultats',
         color: Colors.amber,
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ResultatsScreen())),
+        onTap: () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const ResultatsScreen())),
       ),
       _QuickAction(
         icon: Icons.notifications_outlined,
         label: 'Notifications',
         color: Colors.pink,
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+        onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const NotificationsScreen())),
       ),
     ];
 
@@ -277,14 +242,17 @@ class _QuickActionsGrid extends StatelessWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: action.color.withOpacity(0.12), shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                        color: action.color.withOpacity(0.12),
+                        shape: BoxShape.circle),
                     child: Icon(action.icon, color: action.color, size: 24),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     action.label,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -333,10 +301,15 @@ class _ProgressOverview extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Progression globale', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+              Text('Progression globale',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600)),
               Text(
                 '${(progress * 100).toStringAsFixed(0)}%',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: progressColor),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold, color: progressColor),
               ),
             ],
           ),
@@ -353,7 +326,10 @@ class _ProgressOverview extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             '$completedSteps de $totalSteps étapes complétées',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall
+                ?.copyWith(color: Colors.grey[600]),
           ),
         ],
       ),
@@ -395,14 +371,20 @@ class _StatusGrid extends StatelessWidget {
           label: 'Documents',
           value: '${candidat.piecesJustificatives.nombreFournies}/3',
           isComplete: candidat.piecesJustificatives.nombreFournies >= 3,
-          color: candidat.piecesJustificatives.nombreFournies >= 3 ? Colors.green : Colors.orange,
+          color: candidat.piecesJustificatives.nombreFournies >= 3
+              ? Colors.green
+              : Colors.orange,
         ),
         _StatusCard(
           icon: Icons.location_on_outlined,
           label: 'Centre',
-          value: (candidat.centreAffecte?.isDefini ?? false) ? 'Affecté' : 'En attente',
+          value: (candidat.centreAffecte?.isDefini ?? false)
+              ? 'Affecté'
+              : 'En attente',
           isComplete: candidat.centreAffecte?.isDefini ?? false,
-          color: (candidat.centreAffecte?.isDefini ?? false) ? Colors.green : Colors.grey,
+          color: (candidat.centreAffecte?.isDefini ?? false)
+              ? Colors.green
+              : Colors.grey,
         ),
       ],
     );
@@ -438,12 +420,17 @@ class _StatusCard extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 26),
           const SizedBox(height: 8),
-          Text(label, textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall),
+          Text(label,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(height: 4),
           Text(
             value,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: color),
+            style: Theme.of(context)
+                .textTheme
+                .labelMedium
+                ?.copyWith(fontWeight: FontWeight.bold, color: color),
           ),
         ],
       ),
@@ -483,18 +470,61 @@ class _ExamCentreSection extends StatelessWidget {
             children: [
               const Icon(Icons.location_on, color: Colors.green),
               const SizedBox(width: 12),
-              Text('Centre d\'examen', style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+              Text('Centre d\'examen',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 16),
           _DetailRow(label: 'Établissement', value: centre.nom ?? 'Non défini'),
-          if (centre.ville != null) _DetailRow(label: 'Ville', value: centre.ville!),
-          if (centre.adresse != null) _DetailRow(label: 'Adresse', value: centre.adresse!),
-          if (centre.salle != null) _DetailRow(label: 'Salle', value: centre.salle!),
-          if (centre.numeroPlace != null) _DetailRow(label: 'Place', value: centre.numeroPlace!),
+          if (centre.ville != null)
+            _DetailRow(label: 'Ville', value: centre.ville!),
+          if (centre.adresse != null)
+            _DetailRow(label: 'Adresse', value: centre.adresse!),
+          if (centre.salle != null)
+            _DetailRow(label: 'Salle', value: centre.salle!),
+          if (centre.numeroPlace != null)
+            _DetailRow(label: 'Place', value: centre.numeroPlace!),
+          const SizedBox(height: 12),
+          if (_hasValidCentreLocation(centre))
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => ItineraireScreen(
+                          centreName: centre.nom ?? 'Centre d’examen',
+                          adresse: centre.adresse,
+                          ville: centre.ville,
+                          latitude: centre.lat,
+                          longitude: centre.lng,
+                        ),
+                      ));
+                    },
+                    icon: const Icon(Icons.map_outlined),
+                    label: const Text('Voir la localisation'),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
+  }
+
+  bool _hasValidCentreLocation(CentreAffecte centre) {
+    return (centre.lat != null && centre.lng != null) ||
+        ((centre.adresse?.isNotEmpty ?? false) &&
+            (centre.ville?.isNotEmpty ?? false));
   }
 }
 
@@ -512,7 +542,11 @@ class _NextExamsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Prochain examen', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+        Text('Prochain examen',
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
@@ -528,14 +562,31 @@ class _NextExamsSection extends StatelessWidget {
                 children: [
                   const Icon(Icons.event, color: Colors.blue),
                   const SizedBox(width: 12),
-                  Expanded(child: Text(item.matiere, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold))),
+                  Expanded(
+                      child: Text(item.matiere,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(fontWeight: FontWeight.bold))),
                 ],
               ),
               const SizedBox(height: 16),
-              _IconDetailRow(icon: Icons.calendar_today_outlined, label: 'Date', value: item.date.toString().split(' ')[0]),
-              _IconDetailRow(icon: Icons.schedule_outlined, label: 'Heure', value: '${item.heureDebut} - ${item.heureFin}'),
-              _IconDetailRow(icon: Icons.timer_outlined, label: 'Durée', value: '${item.duree}h'),
-              _IconDetailRow(icon: Icons.bar_chart_outlined, label: 'Coefficient', value: '${item.coefficient}'),
+              _IconDetailRow(
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Date',
+                  value: item.date.toString().split(' ')[0]),
+              _IconDetailRow(
+                  icon: Icons.schedule_outlined,
+                  label: 'Heure',
+                  value: '${item.heureDebut} - ${item.heureFin}'),
+              _IconDetailRow(
+                  icon: Icons.timer_outlined,
+                  label: 'Durée',
+                  value: '${item.duree}h'),
+              _IconDetailRow(
+                  icon: Icons.bar_chart_outlined,
+                  label: 'Coefficient',
+                  value: '${item.coefficient}'),
             ],
           ),
         ),
@@ -549,7 +600,8 @@ class _IconDetailRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _IconDetailRow({required this.icon, required this.label, required this.value});
+  const _IconDetailRow(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -563,10 +615,18 @@ class _IconDetailRow extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: Colors.grey[600]),
               const SizedBox(width: 6),
-              Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
+              Text(label,
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelSmall
+                      ?.copyWith(color: Colors.grey[600])),
             ],
           ),
-          Text(value, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+          Text(value,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -588,9 +648,18 @@ class _DetailRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 105,
-            child: Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
+            child: Text(label,
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(color: Colors.grey[600])),
           ),
-          Expanded(child: Text(value, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600))),
+          Expanded(
+              child: Text(value,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(fontWeight: FontWeight.w600))),
         ],
       ),
     );
@@ -603,7 +672,11 @@ class _InfoBox extends StatelessWidget {
   final String title;
   final String message;
 
-  const _InfoBox({required this.icon, required this.color, required this.title, required this.message});
+  const _InfoBox(
+      {required this.icon,
+      required this.color,
+      required this.title,
+      required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -622,9 +695,17 @@ class _InfoBox extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color, fontWeight: FontWeight.w600)),
+                Text(title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(color: color, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
-                Text(message, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
+                Text(message,
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelSmall
+                        ?.copyWith(color: Colors.grey[600])),
               ],
             ),
           ),

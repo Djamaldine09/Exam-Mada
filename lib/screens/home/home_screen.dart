@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../constants.dart';
@@ -62,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _loadTodayDate() {
-    return '25 Nov.';
+    return DateFormat('d MMM', 'fr_FR').format(DateTime.now());
   }
 
   @override
@@ -85,18 +86,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: isDark ? Colors.grey[700] : Colors.grey[200],
-                  child: Icon(
-                    Icons.person,
-                    color: isDark ? Colors.white : Colors.grey[600],
-                    size: 24,
-                  ),
+                  backgroundImage: _currentUser?.photoUrl != null
+                      ? NetworkImage(_currentUser!.photoUrl!)
+                      : null,
+                  child: _currentUser?.photoUrl == null
+                      ? Icon(
+                          Icons.person,
+                          color: isDark ? Colors.white : Colors.grey[600],
+                          size: 24,
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Hello, ${_currentUser?.displayName.split(' ').first ?? 'Candidate'}',
+                      'Bonjour, ${_currentUser?.displayName.split(' ').first ?? 'Candidate'}',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -107,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Today',
+                            text: 'Aujourd’hui',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: isDark ? Colors.grey[400] : Colors.black,
@@ -117,7 +123,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           TextSpan(
                             text: ' ${_loadTodayDate()}',
                             style: TextStyle(
-                              color: isDark ? Colors.grey[600] : Colors.grey[700],
+                              color:
+                                  isDark ? Colors.grey[600] : Colors.grey[700],
                               fontSize: 12,
                             ),
                           ),
@@ -132,22 +139,16 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () {},
               icon: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[300]!),
-                ),
-                child: Lottie.asset(
-                  'asset/lottie/lottieflow-search-09-000000-easey.json',
-                  width: 28,
-                  height: 28,
-                  fit: BoxFit.cover,
-                  delegates: LottieDelegates(
-                    values: [
-                      ValueDelegate.color(
-                        const ['**'],
-                        value: isDark ? Colors.white : Colors.black,
-                      ),
-                    ],
+                child: ColorFiltered(
+                  colorFilter: ColorFilter.mode(
+                    isDark ? Colors.white : Colors.black,
+                    BlendMode.srcIn,
+                  ),
+                  child: Lottie.asset(
+                    'asset/lottie/lottieflow-search-09-000000-easey.json',
+                    width: 28,
+                    height: 28,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
@@ -155,7 +156,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      body: _isLoading ? const Center(child: CircularProgressIndicator()) : _buildBody(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(),
       bottomNavigationBar: _buildCustomBottomNavBar(),
     );
   }
@@ -191,20 +194,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCustomBottomNavBar() {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+        padding: const EdgeInsets.only(bottom: 20),
         child: Container(
-          height: 70,
+          height: 65,
+          margin: const EdgeInsets.symmetric(horizontal: 79),
           decoration: BoxDecoration(
-            color: const Color(0xFF131313),
-            borderRadius: BorderRadius.circular(35),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
+              color: const Color(0xFF131313),
+              borderRadius: BorderRadius.circular(35),
+              border:
+                  Border.all(color: Colors.white.withOpacity(0.12), width: 1)),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -226,15 +224,17 @@ class _HomeScreenState extends State<HomeScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.all(14),
+        width: 60,
+        height: 60,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: isSelected ? Colors.white : Colors.transparent,
         ),
+        alignment: Alignment.center,
         child: Icon(
           icon,
           color: isSelected ? Colors.black : Colors.grey[500],
-          size: 26,
+          size: 24,
         ),
       ),
     );

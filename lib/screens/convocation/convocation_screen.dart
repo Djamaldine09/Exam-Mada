@@ -5,6 +5,7 @@ import '../../services/api_client.dart';
 import '../../services/api_exception.dart';
 import '../../services/download_service.dart';
 import '../../model/convocation.dart';
+import '../itineraire_screen.dart';
 
 class ConvocationScreen extends StatefulWidget {
   const ConvocationScreen({super.key});
@@ -192,6 +193,20 @@ class _ConvocationScreenState extends State<ConvocationScreen> {
           _row(Icons.place_outlined, 'Adresse', '${c.centre.adresse}, ${c.centre.ville}'),
           _row(Icons.meeting_room_outlined, 'Salle', c.salle),
           _row(Icons.event_seat_outlined, 'Place N°', c.numeroPlace),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => ItineraireScreen(
+                  centreName: c.centre.nom,
+                  adresse: c.centre.adresse,
+                  ville: c.centre.ville,
+                ),
+              ));
+            },
+            icon: const Icon(Icons.map_outlined),
+            label: const Text('Voir la géolocalisation'),
+          ),
         ],
       ),
     );

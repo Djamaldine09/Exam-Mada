@@ -1,10 +1,13 @@
-﻿class AppUser {
+﻿import '../constants.dart';
+
+class AppUser {
   final String id;
   final String nom;
   final String? prenom;
   final String email;
   final String role;
   final String? telephone;
+  final String? photo;
   final String? token;
 
   AppUser({
@@ -14,6 +17,7 @@
     required this.email,
     required this.role,
     this.telephone,
+    this.photo,
     this.token,
   });
 
@@ -25,6 +29,7 @@
       email: json['email']?.toString() ?? '',
       role: json['role']?.toString() ?? 'CANDIDAT',
       telephone: json['telephone']?.toString(),
+      photo: json['photo']?.toString(),
       token: json['token']?.toString(),
     );
   }
@@ -37,6 +42,7 @@
       'email': email,
       'role': role,
       if (telephone != null) 'telephone': telephone,
+      if (photo != null) 'photo': photo,
       if (token != null) 'token': token,
     };
   }
@@ -46,5 +52,17 @@
       return '$prenom $nom';
     }
     return nom;
+  }
+
+  String? get photoUrl {
+    if (photo == null || photo!.isEmpty) {
+      return null;
+    }
+
+    if (photo!.startsWith('http://') || photo!.startsWith('https://')) {
+      return photo;
+    }
+
+    return '${ApiConfig.baseUrl}$photo';
   }
 }

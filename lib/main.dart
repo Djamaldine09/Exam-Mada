@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 // [AJOUT FIREBASE] : Imports nécessaires pour Firebase et FCM
 import 'package:firebase_core/firebase_core.dart';
@@ -11,28 +12,41 @@ import 'screens/home/home_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'services/storage_service.dart';
 import 'theme/theme.dart';
+import 'theme/theme_provider.dart';
 
 // [AJOUT FIREBASE] : Handler pour écouter les notifications en arrière-plan
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint("Notification reçue en arrière-plan : ${message.notification?.title}");
+  debugPrint(
+      "Notification reçue en arrière-plan : ${message.notification?.title}");
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialisation des locales pour intl
+  await initializeDateFormatting('fr_FR', null);
+
   // [AJOUT FIREBASE] : Initialisation de Firebase avant le reste de l'application
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   // [AJOUT FIREBASE] : Enregistrement du handler d'arrière-plan
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   await StorageService.init();
 
-  runApp(const MyApp());
+  final themeModeNotifier = ThemeModeNotifier(ThemeMode.system);
+  await themeModeNotifier.loadThemeMode();
+
+  runApp(
+    ThemeModeProvider(
+      notifier: themeModeNotifier,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -40,10 +54,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = ThemeModeProvider.of(context).mode;
+
     return MaterialApp(
       title: 'ExamGest MG',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
       home: const AppInitializer(),
     );
   }
@@ -83,7 +101,7 @@ class _AppInitializerState extends State<AppInitializer> {
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       debugPrint('Permissions de notification accordées');
-      
+
       // 2. Récupération du token pour cet appareil
       try {
         String? token = await messaging.getToken();
@@ -95,7 +113,8 @@ class _AppInitializerState extends State<AppInitializer> {
 
       // 3. Écoute des notifications quand l'app est ouverte (premier plan)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint("Message reçu au premier plan : ${message.notification?.title}");
+        debugPrint(
+            "Message reçu au premier plan : ${message.notification?.title}");
         // Note: Sur Android, les notifications au premier plan n'affichent pas de popup par défaut.
         // Il faut utiliser flutter_local_notifications si vous voulez forcer l'affichage.
       });
@@ -113,8 +132,7 @@ class _AppInitializerState extends State<AppInitializer> {
       final token = await StorageService.getToken();
       final preferences = await SharedPreferences.getInstance();
 
-      final hasSeenOnboarding =
-          preferences.getBool(_onboardingKey) ?? false;
+      final hasSeenOnboarding = preferences.getBool(_onboardingKey) ?? false;
 
       if (!mounted) return;
 

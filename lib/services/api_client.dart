@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import '../constants.dart';
 import 'api_exception.dart';
 import 'storage_service.dart';
 
@@ -47,8 +48,9 @@ class ApiClient {
 
   static Future<dynamic> get(String url) async {
     try {
-      final response =
-          await http.get(Uri.parse(url), headers: await _headers()).timeout(_timeout);
+      final response = await http
+          .get(Uri.parse(url), headers: await _headers())
+          .timeout(_timeout);
       return _handle(response);
     } on ApiException {
       rethrow;
@@ -60,7 +62,8 @@ class ApiClient {
   static Future<dynamic> post(String url, {Map<String, dynamic>? body}) async {
     try {
       final response = await http
-          .post(Uri.parse(url), headers: await _headers(), body: jsonEncode(body ?? {}))
+          .post(Uri.parse(url),
+              headers: await _headers(), body: jsonEncode(body ?? {}))
           .timeout(_timeout);
       return _handle(response);
     } on ApiException {
@@ -73,7 +76,8 @@ class ApiClient {
   static Future<dynamic> put(String url, {Map<String, dynamic>? body}) async {
     try {
       final response = await http
-          .put(Uri.parse(url), headers: await _headers(), body: jsonEncode(body ?? {}))
+          .put(Uri.parse(url),
+              headers: await _headers(), body: jsonEncode(body ?? {}))
           .timeout(_timeout);
       return _handle(response);
     } on ApiException {
@@ -83,10 +87,15 @@ class ApiClient {
     }
   }
 
+  static Future<dynamic> uploadProfilePhoto({required File file}) async {
+    return uploadFile(ApiConfig.profilePhoto, file: file, fieldName: 'photo');
+  }
+
   static Future<dynamic> delete(String url) async {
     try {
-      final response =
-          await http.delete(Uri.parse(url), headers: await _headers()).timeout(_timeout);
+      final response = await http
+          .delete(Uri.parse(url), headers: await _headers())
+          .timeout(_timeout);
       return _handle(response);
     } on ApiException {
       rethrow;
@@ -107,7 +116,8 @@ class ApiClient {
       final headers = await _headers(json: false);
       request.headers.addAll(headers);
       if (fields != null) request.fields.addAll(fields);
-      request.files.add(await http.MultipartFile.fromPath(fieldName, file.path));
+      request.files
+          .add(await http.MultipartFile.fromPath(fieldName, file.path));
 
       final streamed = await request.send().timeout(_timeout);
       final response = await http.Response.fromStream(streamed);
@@ -122,8 +132,9 @@ class ApiClient {
   /// Télécharge un fichier binaire (PDF) avec le token d'authentification.
   static Future<List<int>> downloadBytes(String url) async {
     try {
-      final response =
-          await http.get(Uri.parse(url), headers: await _headers(json: false)).timeout(_timeout);
+      final response = await http
+          .get(Uri.parse(url), headers: await _headers(json: false))
+          .timeout(_timeout);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return response.bodyBytes;
       }
