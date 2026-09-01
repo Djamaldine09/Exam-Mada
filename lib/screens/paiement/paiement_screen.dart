@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../constants.dart';
 import '../../services/api_client.dart';
 import '../../services/download_service.dart';
 import '../../model/candidat.dart';
 import '../../model/paiement.dart';
+import 'choix_mode_paiement_screen.dart';
 
 class PaiementScreen extends StatefulWidget {
   final Candidat? candidat;
@@ -23,8 +23,6 @@ class _PaiementScreenState extends State<PaiementScreen> with WidgetsBindingObse
   List<Paiement> _history = [];
   String? _errorMessage;
 
-  String _modePaiement = 'MVOLA';
-  final _numeroTelephoneController = TextEditingController();
   final _montantController =
       TextEditingController(text: AppConstants.montantExamenDefaut.toString());
 
@@ -55,7 +53,6 @@ class _PaiementScreenState extends State<PaiementScreen> with WidgetsBindingObse
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _pollingTimer?.cancel();
-    _numeroTelephoneController.dispose();
     _montantController.dispose();
     super.dispose();
   }
@@ -167,70 +164,35 @@ class _PaiementScreenState extends State<PaiementScreen> with WidgetsBindingObse
     }
   }
 
-  bool get _isMobileMoney => _modePaiement != 'CARTE_BANCAIRE';
-
-  Future<void> _initierPaiement() async {
+  Future<void> _ouvrirChoixModePaiement() async {
     final montant = num.tryParse(_montantController.text.trim());
     if (montant == null || montant <= 0) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Montant invalide')));
       return;
     }
-    if (_isMobileMoney && _numeroTelephoneController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Numéro de téléphone requis pour le mobile money')));
-      return;
-    }
 
-    setState(() => _isSubmitting = true);
-    try {
-      final response = await ApiClient.post(
-        ApiConfig.paiementInitier,
-        body: {
-          'montant': montant,
-          'modePaiement': _modePaiement,
-          if (_isMobileMoney) 'numeroTelephone': _numeroTelephoneController.text.trim(),
-        },
-      );
+    final result = await Navigator.push<PaiementInitieResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChoixModePaiementScreen(montant: montant),
+      ),
+    );
 
-      if (!mounted) return;
+    if (result == null || !mounted) return;
 
-      final url = response is Map<String, dynamic> ? response['url'] as String? : null;
-      final paiementId = response is Map<String, dynamic> ? response['paiementId'] as String? : null;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.isCarte
+            ? 'Paiement carte initié. En attente de confirmation.'
+            : 'Paiement initié. Validez la transaction depuis votre téléphone.'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 5),
+      ),
+    );
 
-      if (url != null) {
-        // Carte bancaire : redirection vers Stripe Checkout
-        final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
-          throw Exception('Impossible d\'ouvrir la page de paiement sécurisée');
-        }
-      }
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_isMobileMoney
-              ? 'Paiement initié. Validez la transaction depuis votre téléphone (${AppConstants.modePaiementLabels[_modePaiement]}).'
-              : 'Redirection vers la page de paiement sécurisée. Reviens ici une fois le paiement terminé.'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 5),
-        ),
-      );
-
-      await _loadHistory();
-
-      if (paiementId != null) {
-        _startPollingStatus(paiementId, isCarte: !_isMobileMoney);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
-    }
+    await _loadHistory();
+    _startPollingStatus(result.paiementId, isCarte: result.isCarte);
   }
 
   Future<void> _downloadBulletin() async {
@@ -284,7 +246,7 @@ class _PaiementScreenState extends State<PaiementScreen> with WidgetsBindingObse
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.08),
+                    color: const Color.fromARGB(255, 5, 5, 5).withOpacity(0.08),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
@@ -404,7 +366,7 @@ class _PaiementScreenState extends State<PaiementScreen> with WidgetsBindingObse
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(35),
         border: Border.all(color: Colors.black.withOpacity(0.06)),
       ),
       child: Column(
@@ -413,41 +375,13 @@ class _PaiementScreenState extends State<PaiementScreen> with WidgetsBindingObse
           TextFormField(
             controller: _montantController,
             keyboardType: const TextInputType.numberWithOptions(decimal: false),
-            decoration: const InputDecoration(labelText: 'Montant (Ar)', prefixIcon: Icon(Icons.money_outlined)),
+            decoration: const InputDecoration(labelText: 'Montant (Ar)')
           ),
-          const SizedBox(height: 16),
-          Text('Mode de paiement', style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w600, fontSize: 13)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: AppConstants.modesPaiement.map((mode) {
-              final selected = _modePaiement == mode;
-              return ChoiceChip(
-                label: Text(AppConstants.modePaiementLabels[mode] ?? mode),
-                selected: selected,
-                onSelected: (_) => setState(() => _modePaiement = mode),
-              );
-            }).toList(),
-          ),
-          if (_isMobileMoney) ...[
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _numeroTelephoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Numéro de téléphone mobile money',
-                prefixIcon: Icon(Icons.phone_android_outlined),
-              ),
-            ),
-          ],
           const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _isSubmitting ? null : _initierPaiement,
-            child: _isSubmitting
-                ? const SizedBox(
-                    height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : Text(_isMobileMoney ? 'Payer avec ${AppConstants.modePaiementLabels[_modePaiement]}' : 'Payer par carte bancaire'),
+          ElevatedButton.icon(
+            onPressed: _isSubmitting ? null : _ouvrirChoixModePaiement,
+            icon: const Icon(Icons.payments_outlined),
+            label: const Text('Choisir un mode de paiement'),
           ),
         ],
       ),

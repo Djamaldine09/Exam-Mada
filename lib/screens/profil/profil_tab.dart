@@ -8,6 +8,7 @@ import '../../model/user.dart';
 import '../../services/api_client.dart';
 import '../../services/storage_service.dart';
 import '../../theme/theme_provider.dart';
+import '../../widgets/safe_network_avatar.dart';
 import '../documents/documents_screen.dart';
 import '../inscription/inscription_screen.dart';
 import '../notifications/notifications_screen.dart';
@@ -317,18 +318,14 @@ class _ProfileHeader extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: onEditPhoto,
-                child: CircleAvatar(
+                child: SafeNetworkAvatar(
+                  imageUrl: currentUser?.photoUrl,
                   radius: 31,
                   backgroundColor:
                       Theme.of(context).colorScheme.primary.withOpacity(0.12),
-                  backgroundImage: currentUser?.photoUrl != null
-                      ? NetworkImage(currentUser!.photoUrl!)
-                      : null,
-                  child: currentUser?.photoUrl == null
-                      ? Icon(Icons.person_outline,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 34)
-                      : null,
+                  fallbackIcon: Icons.person_outline,
+                  fallbackIconColor: Theme.of(context).colorScheme.primary,
+                  fallbackIconSize: 34,
                 ),
               ),
               if (isUploadingPhoto)

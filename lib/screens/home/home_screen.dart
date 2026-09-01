@@ -7,6 +7,7 @@ import '../../model/candidat.dart';
 import '../../model/user.dart';
 import '../../services/api_client.dart';
 import '../../services/storage_service.dart';
+import '../../widgets/safe_network_avatar.dart';
 import '../documents/documents_tab.dart';
 import '../planning/planning_tab.dart';
 import '../profil/profil_tab.dart';
@@ -83,19 +84,13 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircleAvatar(
+                SafeNetworkAvatar(
+                  imageUrl: _currentUser?.photoUrl,
                   radius: 20,
                   backgroundColor: isDark ? Colors.grey[700] : Colors.grey[200],
-                  backgroundImage: _currentUser?.photoUrl != null
-                      ? NetworkImage(_currentUser!.photoUrl!)
-                      : null,
-                  child: _currentUser?.photoUrl == null
-                      ? Icon(
-                          Icons.person,
-                          color: isDark ? Colors.white : Colors.grey[600],
-                          size: 24,
-                        )
-                      : null,
+                  fallbackIcon: Icons.person,
+                  fallbackIconColor: isDark ? Colors.white : Colors.grey[600],
+                  fallbackIconSize: 24,
                 ),
                 const SizedBox(width: 12),
                 Column(

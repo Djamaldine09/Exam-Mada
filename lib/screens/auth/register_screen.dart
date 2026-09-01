@@ -68,7 +68,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _validateStep(int step) {
     setState(() => _errorMessage = null);
     if (step == 0) {
-      if (_nomController.text.trim().isEmpty || _prenomController.text.trim().isEmpty) {
+      if (_nomController.text.trim().isEmpty ||
+          _prenomController.text.trim().isEmpty) {
         setState(() => _errorMessage = 'Nom et prénom sont obligatoires');
         return false;
       }
@@ -77,14 +78,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return false;
       }
       final pwd = _passwordController.text;
-      final strongPwd = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$');
+      final strongPwd =
+          RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$');
       if (!strongPwd.hasMatch(pwd)) {
         setState(() => _errorMessage =
             'Mot de passe : 8 caractères min. avec majuscule, minuscule, chiffre et caractère spécial');
         return false;
       }
       if (pwd != _confirmPasswordController.text) {
-        setState(() => _errorMessage = 'Les mots de passe ne correspondent pas');
+        setState(
+            () => _errorMessage = 'Les mots de passe ne correspondent pas');
         return false;
       }
       return true;
@@ -105,7 +108,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return true;
     }
     if (step == 2) {
-      if (_examenController.text.trim().isEmpty || _serieFiliereController.text.trim().isEmpty) {
+      if (_examenController.text.trim().isEmpty ||
+          _serieFiliereController.text.trim().isEmpty) {
         setState(() => _errorMessage = 'Examen et série/filière obligatoires');
         return false;
       }
@@ -118,7 +122,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_validateStep(_step)) return;
     if (_step < 2) {
       setState(() => _step++);
-      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      _pageController.nextPage(
+          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
     } else {
       _submit();
     }
@@ -127,7 +132,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _previousStep() {
     if (_step > 0) {
       setState(() => _step--);
-      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      _pageController.previousPage(
+          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
     }
   }
 
@@ -151,20 +157,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'dateNaissance': _dateNaissance!.toIso8601String().split('T').first,
           'lieuNaissance': _lieuNaissanceController.text.trim(),
           'genre': _genre,
-          'cin': _cinController.text.trim().isEmpty ? null : _cinController.text.trim(),
+          'cin': _cinController.text.trim().isEmpty
+              ? null
+              : _cinController.text.trim(),
           'examen': _examenController.text.trim(),
           'serieFiliere': _serieFiliereController.text.trim(),
           'etablissementPrecedent': _etablissementController.text.trim().isEmpty
               ? null
               : _etablissementController.text.trim(),
-          'adresse': _adresseController.text.trim().isEmpty ? null : _adresseController.text.trim(),
-          'emailParent':
-              _emailParentController.text.trim().isEmpty ? null : _emailParentController.text.trim(),
+          'adresse': _adresseController.text.trim().isEmpty
+              ? null
+              : _adresseController.text.trim(),
+          'emailParent': _emailParentController.text.trim().isEmpty
+              ? null
+              : _emailParentController.text.trim(),
           'region': _region,
         },
       );
 
-      final data = response is Map<String, dynamic> ? response['data'] as Map<String, dynamic>? : null;
+      final data = response is Map<String, dynamic>
+          ? response['data'] as Map<String, dynamic>?
+          : null;
       final token = data?['token'] as String?;
       final userJson = data?['user'] as Map<String, dynamic>?;
 
@@ -223,7 +236,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             _buildStepIndicator(),
             if (_errorMessage != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -232,10 +246,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                      const Icon(Icons.error_outline,
+                          color: Colors.red, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                        child: Text(_errorMessage!,
+                            style: const TextStyle(
+                                color: Colors.red, fontSize: 13)),
                       ),
                     ],
                   ),
@@ -275,7 +292,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
                             )
                           : Text(_step == 2 ? "S'inscrire" : 'Suivant'),
                     ),
@@ -299,9 +317,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           return Expanded(
             child: Row(
               children: [
+                // Avatar display with error handling
                 CircleAvatar(
                   radius: 14,
-                  backgroundColor: isActive ? Theme.of(context).colorScheme.primary : Colors.grey[300],
+                  backgroundColor: isActive
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.grey[300],
                   child: Text(
                     '${index + 1}',
                     style: TextStyle(
@@ -315,10 +336,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Text(labels[index],
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                      color: isActive ? Theme.of(context).colorScheme.primary : Colors.grey[600],
+                      fontWeight:
+                          isActive ? FontWeight.bold : FontWeight.normal,
+                      color: isActive
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey[600],
                     )),
-                if (index < 2) Expanded(child: Container(height: 1, color: Colors.grey[300], margin: const EdgeInsets.symmetric(horizontal: 6))),
+                if (index < 2)
+                  Expanded(
+                      child: Container(
+                          height: 1,
+                          color: Colors.grey[300],
+                          margin: const EdgeInsets.symmetric(horizontal: 6))),
               ],
             ),
           );
@@ -336,25 +365,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
           children: [
             TextFormField(
               controller: _nomController,
-              decoration: const InputDecoration(labelText: 'Nom', prefixIcon: Icon(Icons.person_outline)),
+              decoration: const InputDecoration(
+                  labelText: 'Nom', prefixIcon: Icon(Icons.person_outline)),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _prenomController,
-              decoration: const InputDecoration(labelText: 'Prénom', prefixIcon: Icon(Icons.person_outline)),
+              decoration: const InputDecoration(
+                  labelText: 'Prénom', prefixIcon: Icon(Icons.person_outline)),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
+              decoration: const InputDecoration(
+                  labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _telephoneController,
               keyboardType: TextInputType.phone,
-              decoration:
-                  const InputDecoration(labelText: 'Téléphone', prefixIcon: Icon(Icons.phone_outlined)),
+              decoration: const InputDecoration(
+                  labelText: 'Téléphone',
+                  prefixIcon: Icon(Icons.phone_outlined)),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -364,8 +397,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 labelText: 'Mot de passe',
                 prefixIcon: const Icon(Icons.lock_outlined),
                 suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(_obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
             ),
@@ -378,8 +414,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             TextFormField(
               controller: _confirmPasswordController,
               obscureText: _obscurePassword,
-              decoration:
-                  const InputDecoration(labelText: 'Confirmer le mot de passe', prefixIcon: Icon(Icons.lock_outlined)),
+              decoration: const InputDecoration(
+                  labelText: 'Confirmer le mot de passe',
+                  prefixIcon: Icon(Icons.lock_outlined)),
             ),
           ],
         ),
@@ -397,8 +434,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             InkWell(
               onTap: _pickDateNaissance,
               child: InputDecorator(
-                decoration:
-                    const InputDecoration(labelText: 'Date de naissance', prefixIcon: Icon(Icons.cake_outlined)),
+                decoration: const InputDecoration(
+                    labelText: 'Date de naissance',
+                    prefixIcon: Icon(Icons.cake_outlined)),
                 child: Text(
                   _dateNaissance != null
                       ? '${_dateNaissance!.day.toString().padLeft(2, '0')}/${_dateNaissance!.month.toString().padLeft(2, '0')}/${_dateNaissance!.year}'
@@ -409,8 +447,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _lieuNaissanceController,
-              decoration:
-                  const InputDecoration(labelText: 'Lieu de naissance', prefixIcon: Icon(Icons.location_city_outlined)),
+              decoration: const InputDecoration(
+                  labelText: 'Lieu de naissance',
+                  prefixIcon: Icon(Icons.location_city_outlined)),
             ),
             const SizedBox(height: 16),
             Row(
@@ -431,12 +470,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _cinController,
-              decoration: const InputDecoration(labelText: 'CIN (optionnel)', prefixIcon: Icon(Icons.badge_outlined)),
+              decoration: const InputDecoration(
+                  labelText: 'CIN (optionnel)',
+                  prefixIcon: Icon(Icons.badge_outlined)),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _region,
-              decoration: const InputDecoration(labelText: 'Région', prefixIcon: Icon(Icons.map_outlined)),
+              decoration: const InputDecoration(
+                  labelText: 'Région', prefixIcon: Icon(Icons.map_outlined)),
               items: AppConstants.regionsMadagascar
                   .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                   .toList(),
@@ -481,7 +523,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _adresseController,
-              decoration: const InputDecoration(labelText: 'Adresse (optionnel)', prefixIcon: Icon(Icons.home_outlined)),
+              decoration: const InputDecoration(
+                  labelText: 'Adresse (optionnel)',
+                  prefixIcon: Icon(Icons.home_outlined)),
             ),
             const SizedBox(height: 16),
             TextFormField(

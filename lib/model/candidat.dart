@@ -61,7 +61,7 @@ class PiecesJustificatives {
     );
   }
 
-  int get nombreFournies => [photoIdentite, acteNaissance, diplomePrecedent]
+  int get nombreFournies => [photoIdentite, acteNaissance, photoSupp]
       .where((e) => e != null && e.isNotEmpty)
       .length;
 }
