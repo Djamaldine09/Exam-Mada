@@ -47,6 +47,9 @@ dependencies:
   # Connexion Google
   google_sign_in: ^6.2.1
 
+  # Connexion Facebook
+  flutter_facebook_auth: ^7.1.1
+
   shared_preferences: ^2.5.3 
 
   # Animations douces
@@ -77,4 +80,5 @@ flutter:
     - asset/images/logo-app.png
     - asset/images/logo-icon.png
     - asset/images/google_logo.png
+    - asset/images/facebook-logo.png
     - asset/images/payment_logos/

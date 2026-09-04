@@ -29,8 +29,7 @@ class _SafeNetworkAvatarState extends State<SafeNetworkAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    // If no URL, show fallback icon immediately
-    if (widget.imageUrl == null) {
+    if (widget.imageUrl == null || _imageLoadFailed) {
       return CircleAvatar(
         radius: widget.radius,
         backgroundColor: widget.backgroundColor,
@@ -42,37 +41,31 @@ class _SafeNetworkAvatarState extends State<SafeNetworkAvatar> {
       );
     }
 
-    // If image already failed, show fallback
-    if (_imageLoadFailed) {
-      return CircleAvatar(
-        radius: widget.radius,
-        backgroundColor: widget.backgroundColor,
-        child: Icon(
-          widget.fallbackIcon,
-          color: widget.fallbackIconColor,
-          size: widget.fallbackIconSize,
-        ),
-      );
-    }
-
-    // Try to load the network image with error callback
     return CircleAvatar(
       radius: widget.radius,
       backgroundColor: widget.backgroundColor,
-      backgroundImage: NetworkImage(widget.imageUrl!),
-      onBackgroundImageError: (exception, stackTrace) {
-        // Silently mark as failed - don't re-throw
-        if (mounted) {
-          setState(() => _imageLoadFailed = true);
-        }
-      },
-      child: _imageLoadFailed
-          ? Icon(
+      child: ClipOval(
+        child: Image.network(
+          widget.imageUrl!,
+          width: widget.radius * 2,
+          height: widget.radius * 2,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            if (mounted) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() => _imageLoadFailed = true);
+                }
+              });
+            }
+            return Icon(
               widget.fallbackIcon,
               color: widget.fallbackIconColor,
               size: widget.fallbackIconSize,
-            )
-          : null,
+            );
+          },
+        ),
+      ),
     );
   }
 }

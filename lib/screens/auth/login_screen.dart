@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../constants.dart';
 import '../../services/api_client.dart';
@@ -216,6 +217,75 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _signInWithFacebook() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final appId = ApiConfig.facebookAppId.trim();
+      if (appId.isEmpty) {
+        throw Exception(
+          'FACEBOOK_APP_ID manquant. Lance Flutter avec '
+          '--dart-define=FACEBOOK_APP_ID=VOTRE_APP_ID',
+        );
+      }
+
+      final loginResult = await FacebookAuth.instance.login(
+        permissions: const ['public_profile', 'email'],
+      );
+
+      if (loginResult.status == LoginStatus.cancelled) {
+        return;
+      }
+
+      if (loginResult.status == LoginStatus.failed || loginResult.accessToken == null) {
+        throw Exception('Connexion Facebook refusée ou impossible');
+      }
+
+      final userData = await FacebookAuth.instance.getUserData(
+        fields: 'id,name,email,first_name,last_name',
+      );
+
+      final accessTokenValue = loginResult.accessToken?.tokenString ??
+          loginResult.accessToken?.toJson()['tokenString'] ??
+          loginResult.accessToken?.toJson()['token'] ??
+          loginResult.accessToken?.toString() ??
+          '';
+
+      if (accessTokenValue.isEmpty) {
+        throw Exception('Jeton Facebook introuvable');
+      }
+
+      final response = await ApiClient.post(
+        ApiConfig.facebookAuth,
+        body: {'token': accessTokenValue},
+      );
+
+      final token = response['token'] as String? ?? response['jwt'] as String?;
+      final userJson = response['user'] as Map<String, dynamic>? ?? userData;
+
+      if (token == null || userJson == null) {
+        throw Exception('Réponse de connexion Facebook invalide');
+      }
+
+      await StorageService.saveSession(
+          token: token, user: AppUser.fromJson(userJson));
+
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur de connexion Facebook : $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   void _goToOtpLogin() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const OtpLoginScreen()),
@@ -279,9 +349,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -304,6 +383,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: InputDecoration(
                       labelText: 'Mot de passe',
                       prefixIcon: const Icon(Icons.lock_outlined),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
@@ -440,6 +528,33 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(52),
                       side: BorderSide(color: Colors.grey[300]!),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FadeInUp(
+                  duration: const Duration(milliseconds: 800),
+                  delay: const Duration(milliseconds: 620),
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _signInWithFacebook,
+                    icon: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: Image.asset(
+                        'asset/images/facebook-logo.png',
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.high,
+                      ),
+                    ),
+                    label: const Text('Facebook'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      backgroundColor: const Color(0xFF1877F2),
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFF1877F2)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(35),
                       ),

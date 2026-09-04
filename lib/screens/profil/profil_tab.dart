@@ -34,6 +34,21 @@ class ProfilTab extends StatefulWidget {
 class _ProfilTabState extends State<ProfilTab> {
   bool _isUploadingPhoto = false;
   final ImagePicker _imagePicker = ImagePicker();
+  AppUser? _localUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _localUser = widget.currentUser;
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfilTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentUser != oldWidget.currentUser) {
+      _localUser = widget.currentUser;
+    }
+  }
 
   Future<void> _pickAndUploadPhoto() async {
     final pickedFile = await _imagePicker.pickImage(
@@ -64,6 +79,15 @@ class _ProfilTabState extends State<ProfilTab> {
 
       final updatedUser = AppUser.fromJson(userData);
       await StorageService.saveUser(updatedUser);
+
+      if (mounted) {
+        setState(() {
+          _localUser = updatedUser;
+        });
+        PaintingBinding.instance.imageCache.clear();
+        PaintingBinding.instance.imageCache.clearLiveImages();
+      }
+
       await widget.onRefresh();
 
       if (mounted) {
@@ -91,7 +115,7 @@ class _ProfilTabState extends State<ProfilTab> {
   Widget build(BuildContext context) {
     final themeMode = ThemeModeProvider.of(context).mode;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentUser = widget.currentUser;
+    final currentUser = _localUser ?? widget.currentUser;
     final candidat = widget.candidat;
     final onRefresh = widget.onRefresh;
     final onLogout = widget.onLogout;

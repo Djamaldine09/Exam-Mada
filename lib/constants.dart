@@ -21,10 +21,15 @@ class ApiConfig {
   static const String forgotPassword = '$apiPrefix/auth/forgot-password';
   static const String resetPassword = '$apiPrefix/auth/reset-password';
   static const String googleAuth = '$apiPrefix/auth/google';
+  static const String facebookAuth = '$apiPrefix/auth/facebook';
 
   static const String googleWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
     defaultValue: '',
+  );
+  static const String facebookAppId = String.fromEnvironment(
+    'FACEBOOK_APP_ID',
+    defaultValue: '914690428259746',
   );
   static const String otpLoginSend = '$apiPrefix/auth/sms/login/send';
   static const String otpLoginVerify = '$apiPrefix/auth/sms/login/verify';
@@ -103,7 +108,7 @@ class AppConstants {
   static const String themeModeKey = 'examgest_theme_mode';
 
   /// Montant par défaut des frais d'examen (Ariary).
-  static const num montantExamenDefaut = 15000;
+  static const num montantExamenDefaut = 25000;
 
   /// Régions de Madagascar (liste officielle des 22 régions).
   static const List<String> regionsMadagascar = [
